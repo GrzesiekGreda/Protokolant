@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}{{ protocol.title }} - Protokolant{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <!-- Header with actions -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Protokół</h1>
+            <div>
+                <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Powrót do listy</a>
+                <form method="POST" action="{{ url_for('main.delete_protocol', protocol_id=protocol.id) }}" style="display: inline;" onsubmit="return confirm('Czy na pewno chcesz usunąć ten protokół?');">
+                    <button type="submit" class="btn btn-danger">Usuń</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Protocol Details -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">{{ protocol.title }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Data spotkania:</strong> {{ protocol.date.strftime('%d.%m.%Y %H:%M') }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Miejsce:</strong> {{ protocol.location or 'Nie określono' }}</p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Data utworzenia:</strong> {{ protocol.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Ostatnia aktualizacja:</strong> {{ protocol.updated_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Participants -->
+        {% if protocol.participants %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Uczestnicy ({{ protocol.participants|length }})</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for participant in protocol.participants %}
+                    <li class="list-group-item">
+                        <i class="bi bi-person-fill"></i> {{ participant.name }}
+                        {% if participant.email %}
+                        <span class="text-muted">({{ participant.email }})</span>
+                        {% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Agenda Items -->
+        {% if protocol.agenda_items %}
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Agenda spotkania</h5>
+            </div>
+            <div class="card-body">
+                {% for item in protocol.agenda_items|sort(attribute='order') %}
+                <div class="mb-3">
+                    <h6><strong>{{ loop.index }}. {{ item.title }}</strong></h6>
+                    {% if item.discussion %}
+                    <p class="ms-3 text-muted">{{ item.discussion }}</p>
+                    {% endif %}
+                </div>
+                {% if not loop.last %}<hr>{% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Action Items -->
+        {% if protocol.action_items %}
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Zadania do wykonania ({{ protocol.action_items|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Zadanie</th>
+                                <th>Odpowiedzialny</th>
+                                <th>Termin</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for action in protocol.action_items %}
+                            <tr>
+                                <td>{{ action.description }}</td>
+                                <td>{{ action.assignee }}</td>
+                                <td>
+                                    {% if action.deadline %}
+                                    {{ action.deadline.strftime('%d.%m.%Y') }}
+                                    {% else %}
+                                    <span class="text-muted">Brak terminu</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if action.status == 'completed' %}
+                                    <span class="badge bg-success">Wykonane</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">W toku</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

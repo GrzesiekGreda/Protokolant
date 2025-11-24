@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Nowy protokół - Protokolant{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <h1 class="mb-4">Nowy protokół</h1>
+
+        <form method="POST" action="{{ url_for('main.new_protocol') }}">
+            <!-- Basic Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Podstawowe informacje</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Tytuł spotkania *</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label">Data i godzina *</label>
+                            <input type="datetime-local" class="form-control" id="date" name="date" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">Miejsce</label>
+                            <input type="text" class="form-control" id="location" name="location">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participants -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Uczestnicy</h5>
+                </div>
+                <div class="card-body">
+                    <div id="participants-container">
+                        <div class="mb-2">
+                            <input type="text" class="form-control" name="participants[]" placeholder="Imię i nazwisko uczestnika">
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success" onclick="addParticipant()">+ Dodaj uczestnika</button>
+                </div>
+            </div>
+
+            <!-- Agenda Items -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Punkty agendy</h5>
+                </div>
+                <div class="card-body">
+                    <div id="agenda-container">
+                        <div class="mb-3 agenda-item">
+                            <label class="form-label">Punkt agendy</label>
+                            <input type="text" class="form-control mb-2" name="agenda_title[]" placeholder="Tytuł punktu">
+                            <textarea class="form-control" name="agenda_discussion[]" rows="3" placeholder="Omówienie / dyskusja"></textarea>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-info" onclick="addAgendaItem()">+ Dodaj punkt agendy</button>
+                </div>
+            </div>
+
+            <!-- Action Items -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Zadania do wykonania</h5>
+                </div>
+                <div class="card-body">
+                    <div id="actions-container">
+                        <div class="mb-3 action-item row">
+                            <div class="col-md-6">
+                                <label class="form-label">Opis zadania</label>
+                                <textarea class="form-control" name="action_description[]" rows="2" placeholder="Co należy zrobić?"></textarea>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Odpowiedzialny</label>
+                                <input type="text" class="form-control" name="action_assignee[]" placeholder="Imię i nazwisko">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Termin</label>
+                                <input type="date" class="form-control" name="action_deadline[]">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-warning" onclick="addActionItem()">+ Dodaj zadanie</button>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="d-flex justify-content-between mb-5">
+                <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Anuluj</a>
+                <button type="submit" class="btn btn-primary btn-lg">Utwórz protokół</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addParticipant() {
+    const container = document.getElementById('participants-container');
+    const div = document.createElement('div');
+    div.className = 'mb-2';
+    div.innerHTML = '<input type="text" class="form-control" name="participants[]" placeholder="Imię i nazwisko uczestnika">';
+    container.appendChild(div);
+}
+
+function addAgendaItem() {
+    const container = document.getElementById('agenda-container');
+    const div = document.createElement('div');
+    div.className = 'mb-3 agenda-item';
+    div.innerHTML = `
+        <label class="form-label">Punkt agendy</label>
+        <input type="text" class="form-control mb-2" name="agenda_title[]" placeholder="Tytuł punktu">
+        <textarea class="form-control" name="agenda_discussion[]" rows="3" placeholder="Omówienie / dyskusja"></textarea>
+    `;
+    container.appendChild(div);
+}
+
+function addActionItem() {
+    const container = document.getElementById('actions-container');
+    const div = document.createElement('div');
+    div.className = 'mb-3 action-item row';
+    div.innerHTML = `
+        <div class="col-md-6">
+            <label class="form-label">Opis zadania</label>
+            <textarea class="form-control" name="action_description[]" rows="2" placeholder="Co należy zrobić?"></textarea>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Odpowiedzialny</label>
+            <input type="text" class="form-control" name="action_assignee[]" placeholder="Imię i nazwisko">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Termin</label>
+            <input type="date" class="form-control" name="action_deadline[]">
+        </div>
+    `;
+    container.appendChild(div);
+}
+</script>
+{% endblock %}

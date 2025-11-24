@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Lista protokołów - Protokolant{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Lista protokołów</h1>
+            <a href="{{ url_for('main.new_protocol') }}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Nowy protokół
+            </a>
+        </div>
+
+        {% if protocols %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Tytuł</th>
+                            <th>Data spotkania</th>
+                            <th>Miejsce</th>
+                            <th>Uczestnicy</th>
+                            <th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for protocol in protocols %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('main.view_protocol', protocol_id=protocol.id) }}" class="text-decoration-none">
+                                    <strong>{{ protocol.title }}</strong>
+                                </a>
+                            </td>
+                            <td>{{ protocol.date.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td>{{ protocol.location or '-' }}</td>
+                            <td>
+                                <span class="badge bg-secondary">{{ protocol.participants|length }}</span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('main.view_protocol', protocol_id=protocol.id) }}" class="btn btn-sm btn-info">
+                                    Wyświetl
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <h4 class="alert-heading">Brak protokołów</h4>
+                <p>Nie utworzono jeszcze żadnych protokołów. Kliknij przycisk "Nowy protokół" aby utworzyć pierwszy.</p>
+                <hr>
+                <a href="{{ url_for('main.new_protocol') }}" class="btn btn-primary">Utwórz pierwszy protokół</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
