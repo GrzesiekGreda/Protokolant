@@ -54,17 +54,35 @@
             <!-- Agenda Items -->
             <div class="card mb-4">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">Punkty agendy</h5>
+                    <h5 class="mb-0">Porządek obrad</h5>
                 </div>
                 <div class="card-body">
                     <div id="agenda-container">
-                        <div class="mb-3 agenda-item">
-                            <label class="form-label">Punkt agendy</label>
-                            <input type="text" class="form-control mb-2" name="agenda_title[]" placeholder="Tytuł punktu">
-                            <textarea class="form-control" name="agenda_discussion[]" rows="3" placeholder="Omówienie / dyskusja"></textarea>
+                        <div class="card mb-3 agenda-item">
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label class="form-label">Temat</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="agenda_title[]" placeholder="Temat do omówienia">
+                                        <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'agenda_title')" title="Nagraj głosem">
+                                            🎤
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Omówienie</label>
+                                    <div class="input-group">
+                                        <textarea class="form-control" name="agenda_discussion[]" rows="3" placeholder="Szczegóły omówienia tematu"></textarea>
+                                        <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'agenda_discussion')" title="Nagraj głosem">
+                                            🎤
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeAgendaItem(this)">Usuń punkt</button>
+                            </div>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-info" onclick="addAgendaItem()">+ Dodaj punkt agendy</button>
+                    <button type="button" class="btn btn-sm btn-info" onclick="addAgendaItem()">+ Dodaj punkt</button>
                 </div>
             </div>
 
@@ -75,18 +93,28 @@
                 </div>
                 <div class="card-body">
                     <div id="actions-container">
-                        <div class="mb-3 action-item row">
-                            <div class="col-md-6">
-                                <label class="form-label">Opis zadania</label>
-                                <textarea class="form-control" name="action_description[]" rows="2" placeholder="Co należy zrobić?"></textarea>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Odpowiedzialny</label>
-                                <input type="text" class="form-control" name="action_assignee[]" placeholder="Imię i nazwisko">
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Termin</label>
-                                <input type="date" class="form-control" name="action_deadline[]">
+                        <div class="card mb-3 action-item">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Opis zadania</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" name="action_description[]" placeholder="Co należy zrobić?">
+                                            <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'action_description')" title="Nagraj głosem">
+                                                🎤
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Odpowiedzialny</label>
+                                        <input type="text" class="form-control" name="action_assignee[]" placeholder="Kto wykona?">
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Termin</label>
+                                        <input type="date" class="form-control" name="action_deadline[]">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeActionItem(this)">Usuń zadanie</button>
                             </div>
                         </div>
                     </div>
@@ -119,35 +147,73 @@ function addParticipant() {
 
 function addAgendaItem() {
     const container = document.getElementById('agenda-container');
-    const div = document.createElement('div');
-    div.className = 'mb-3 agenda-item';
-    div.innerHTML = `
-        <label class="form-label">Punkt agendy</label>
-        <input type="text" class="form-control mb-2" name="agenda_title[]" placeholder="Tytuł punktu">
-        <textarea class="form-control" name="agenda_discussion[]" rows="3" placeholder="Omówienie / dyskusja"></textarea>
+    const newItem = document.createElement('div');
+    newItem.className = 'card mb-3 agenda-item';
+    newItem.innerHTML = `
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Temat</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" name="agenda_title[]" placeholder="Temat do omówienia">
+                    <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'agenda_title')" title="Nagraj głosem">
+                        🎤
+                    </button>
+                </div>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Omówienie</label>
+                <div class="input-group">
+                    <textarea class="form-control" name="agenda_discussion[]" rows="3" placeholder="Szczegóły omówienia tematu"></textarea>
+                    <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'agenda_discussion')" title="Nagraj głosem">
+                        🎤
+                    </button>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeAgendaItem(this)">Usuń punkt</button>
+        </div>
     `;
-    container.appendChild(div);
+    container.appendChild(newItem);
+}
+
+// Remove agenda item
+function removeAgendaItem(button) {
+    button.closest('.agenda-item').remove();
 }
 
 function addActionItem() {
     const container = document.getElementById('actions-container');
-    const div = document.createElement('div');
-    div.className = 'mb-3 action-item row';
-    div.innerHTML = `
-        <div class="col-md-6">
-            <label class="form-label">Opis zadania</label>
-            <textarea class="form-control" name="action_description[]" rows="2" placeholder="Co należy zrobić?"></textarea>
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Odpowiedzialny</label>
-            <input type="text" class="form-control" name="action_assignee[]" placeholder="Imię i nazwisko">
-        </div>
-        <div class="col-md-3">
-            <label class="form-label">Termin</label>
-            <input type="date" class="form-control" name="action_deadline[]">
+    const newItem = document.createElement('div');
+    newItem.className = 'card mb-3 action-item';
+    newItem.innerHTML = `
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Opis zadania</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="action_description[]" placeholder="Co należy zrobić?">
+                        <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'action_description')" title="Nagraj głosem">
+                            🎤
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label">Odpowiedzialny</label>
+                    <input type="text" class="form-control" name="action_assignee[]" placeholder="Kto wykona?">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label">Termin</label>
+                    <input type="date" class="form-control" name="action_deadline[]">
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeActionItem(this)">Usuń zadanie</button>
         </div>
     `;
-    container.appendChild(div);
+    container.appendChild(newItem);
+}
+
+// Remove action item
+function removeActionItem(button) {
+    button.closest('.action-item').remove();
 }
 
 // === FUNKCJA NAGRYWANIA MOWY ===
