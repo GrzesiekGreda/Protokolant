@@ -10,6 +10,7 @@
             <h1>Protokół</h1>
             <div>
                 <a href="{{ url_for('main.index') }}" class="btn btn-secondary">← Powrót do listy</a>
+                <a href="{{ url_for('main.edit_protocol', protocol_id=protocol.id) }}" class="btn btn-primary">✏️ Edytuj</a>
                 <form method="POST" action="{{ url_for('main.delete_protocol', protocol_id=protocol.id) }}" style="display: inline;" onsubmit="return confirm('Czy na pewno chcesz usunąć ten protokół?');">
                     <button type="submit" class="btn btn-danger">Usuń</button>
                 </form>

@@ -1,16 +1,23 @@
-/* Protokolant - Custom Styles */
+/* Protokolant - Custom Styles - Dark Theme */
 
 :root {
-    --primary-color: #1e3a8a;
-    --secondary-color: #3b82f6;
+    --primary-color: #3b82f6;
+    --secondary-color: #60a5fa;
     --success-color: #10b981;
     --warning-color: #f59e0b;
     --danger-color: #ef4444;
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --border-color: #475569;
 }
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f8f9fa;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -28,24 +35,41 @@ main {
 
 /* Cards */
 .card {
-    border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     border-radius: 8px;
     overflow: hidden;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
 }
 
 .card-header {
-    border-bottom: none;
+    border-bottom: 1px solid var(--border-color);
     padding: 1.25rem;
+}
+
+.card-body {
+    background-color: var(--bg-secondary);
 }
 
 /* Tables */
 .table {
-    background-color: white;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+.table thead {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+.table tbody {
+    background-color: var(--bg-secondary);
 }
 
 .table-hover tbody tr:hover {
-    background-color: #f1f5f9;
+    background-color: var(--bg-tertiary);
     cursor: pointer;
 }
 
@@ -86,31 +110,65 @@ main {
 /* Forms */
 .form-control, .form-select {
     border-radius: 6px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border-color);
     padding: 0.625rem 0.875rem;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
 }
 
 .form-control:focus, .form-select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.15);
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.form-control::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.6;
 }
 
 .form-label {
     font-weight: 500;
-    color: #374151;
+    color: var(--text-secondary);
     margin-bottom: 0.5rem;
 }
 
 /* Alerts */
 .alert {
     border-radius: 8px;
-    border: none;
+    border: 1px solid var(--border-color);
+}
+
+.alert-success {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border-color: #10b981;
+}
+
+.alert-danger {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border-color: #ef4444;
+}
+
+.alert-warning {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border-color: #f59e0b;
+}
+
+.alert-info {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border-color: #3b82f6;
 }
 
 /* Footer */
 footer {
     margin-top: auto;
-    background-color: #1f2937 !important;
+    background-color: var(--bg-secondary) !important;
+    border-top: 1px solid var(--border-color);
 }
 
 /* Badges */
@@ -123,9 +181,10 @@ footer {
 /* Dynamic form items */
 .agenda-item, .action-item {
     padding: 1rem;
-    background-color: #f9fafb;
+    background-color: var(--bg-tertiary);
     border-radius: 6px;
     margin-bottom: 1rem;
+    border: 1px solid var(--border-color);
 }
 
 /* Responsive adjustments */

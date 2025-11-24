@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Edytuj protokół - Protokolant{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-10 mx-auto">
+        <h1 class="mb-4">Edytuj protokół</h1>
+
+        <form method="POST" action="{{ url_for('main.edit_protocol', protocol_id=protocol.id) }}">
+            <!-- Basic Information -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Podstawowe informacje</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Tytuł spotkania *</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="title" name="title" value="{{ protocol.title }}" required>
+                            <button type="button" class="btn btn-outline-primary" onclick="recordSpeech('title')" title="Nagraj głosem">
+                                🎤
+                            </button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date" class="form-label">Data i godzina *</label>
+                            <input type="datetime-local" class="form-control" id="date" name="date" 
+                                   value="{{ protocol.date.strftime('%Y-%m-%dT%H:%M') }}" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="location" class="form-label">Miejsce</label>
+                            <input type="text" class="form-control" id="location" name="location" value="{{ protocol.location or '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Participants -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Uczestnicy</h5>
+                </div>
+                <div class="card-body">
+                    <div id="participants-container">
+                        {% for participant in protocol.participants %}
+                        <div class="mb-2">
+                            <input type="text" class="form-control" name="participants[]" value="{{ participant.name }}" placeholder="Imię i nazwisko uczestnika">
+                        </div>
+                        {% endfor %}
+                        {% if not protocol.participants %}
+                        <div class="mb-2">
+                            <input type="text" class="form-control" name="participants[]" placeholder="Imię i nazwisko uczestnika">
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success" onclick="addParticipant()">+ Dodaj uczestnika</button>
+                </div>
+            </div>
+
+            <!-- Agenda Items -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Porządek obrad</h5>
+                </div>
+                <div class="card-body">
+                    <div id="agenda-container">
+                        {% for agenda in protocol.agenda_items %}
+                        <div class="card mb-3 agenda-item">
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label class="form-label">Temat</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="agenda_title[]" value="{{ agenda.title }}" placeholder="Temat do omówienia">
+                                        <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'agenda_title')" title="Nagraj głosem">
+                                            🎤
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Omówienie</label>
+                                    <div class="input-group">
+                                        <textarea class="form-control" name="agenda_discussion[]" rows="3" placeholder="Szczegóły omówienia tematu">{{ agenda.discussion }}</textarea>
+                                        <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'agenda_discussion')" title="Nagraj głosem">
+                                            🎤
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeAgendaItem(this)">Usuń punkt</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if not protocol.agenda_items %}
+                        <div class="card mb-3 agenda-item">
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <label class="form-label">Temat</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" name="agenda_title[]" placeholder="Temat do omówienia">
+                                        <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'agenda_title')" title="Nagraj głosem">
+                                            🎤
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Omówienie</label>
+                                    <div class="input-group">
+                                        <textarea class="form-control" name="agenda_discussion[]" rows="3" placeholder="Szczegóły omówienia tematu"></textarea>
+                                        <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'agenda_discussion')" title="Nagraj głosem">
+                                            🎤
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeAgendaItem(this)">Usuń punkt</button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-info" onclick="addAgendaItem()">+ Dodaj punkt</button>
+                </div>
+            </div>
+
+            <!-- Action Items -->
+            <div class="card mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">Zadania do wykonania</h5>
+                </div>
+                <div class="card-body">
+                    <div id="actions-container">
+                        {% for action in protocol.action_items %}
+                        <div class="card mb-3 action-item">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Opis zadania</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" name="action_description[]" value="{{ action.description }}" placeholder="Co należy zrobić?">
+                                            <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'action_description')" title="Nagraj głosem">
+                                                🎤
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Odpowiedzialny</label>
+                                        <input type="text" class="form-control" name="action_assignee[]" value="{{ action.assignee or '' }}" placeholder="Kto wykona?">
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Termin</label>
+                                        <input type="date" class="form-control" name="action_deadline[]" value="{{ action.deadline.strftime('%Y-%m-%d') if action.deadline else '' }}">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeActionItem(this)">Usuń zadanie</button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if not protocol.action_items %}
+                        <div class="card mb-3 action-item">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-2">
+                                        <label class="form-label">Opis zadania</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" name="action_description[]" placeholder="Co należy zrobić?">
+                                            <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'action_description')" title="Nagraj głosem">
+                                                🎤
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Odpowiedzialny</label>
+                                        <input type="text" class="form-control" name="action_assignee[]" placeholder="Kto wykona?">
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <label class="form-label">Termin</label>
+                                        <input type="date" class="form-control" name="action_deadline[]">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeActionItem(this)">Usuń zadanie</button>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-sm btn-warning" onclick="addActionItem()">+ Dodaj zadanie</button>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="d-flex justify-content-between mb-4">
+                <a href="{{ url_for('main.view_protocol', protocol_id=protocol.id) }}" class="btn btn-secondary">Anuluj</a>
+                <button type="submit" class="btn btn-primary">Zapisz zmiany</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Add participant field
+function addParticipant() {
+    const container = document.getElementById('participants-container');
+    const newField = document.createElement('div');
+    newField.className = 'mb-2';
+    newField.innerHTML = '<input type="text" class="form-control" name="participants[]" placeholder="Imię i nazwisko uczestnika">';
+    container.appendChild(newField);
+}
+
+// Add agenda item
+function addAgendaItem() {
+    const container = document.getElementById('agenda-container');
+    const newItem = document.createElement('div');
+    newItem.className = 'card mb-3 agenda-item';
+    newItem.innerHTML = `
+        <div class="card-body">
+            <div class="mb-2">
+                <label class="form-label">Temat</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" name="agenda_title[]" placeholder="Temat do omówienia">
+                    <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'agenda_title')" title="Nagraj głosem">
+                        🎤
+                    </button>
+                </div>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Omówienie</label>
+                <div class="input-group">
+                    <textarea class="form-control" name="agenda_discussion[]" rows="3" placeholder="Szczegóły omówienia tematu"></textarea>
+                    <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'agenda_discussion')" title="Nagraj głosem">
+                        🎤
+                    </button>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeAgendaItem(this)">Usuń punkt</button>
+        </div>
+    `;
+    container.appendChild(newItem);
+}
+
+// Remove agenda item
+function removeAgendaItem(button) {
+    button.closest('.agenda-item').remove();
+}
+
+// Add action item
+function addActionItem() {
+    const container = document.getElementById('actions-container');
+    const newItem = document.createElement('div');
+    newItem.className = 'card mb-3 action-item';
+    newItem.innerHTML = `
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6 mb-2">
+                    <label class="form-label">Opis zadania</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="action_description[]" placeholder="Co należy zrobić?">
+                        <button type="button" class="btn btn-outline-primary" onclick="recordSpeech(this, 'action_description')" title="Nagraj głosem">
+                            🎤
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label">Odpowiedzialny</label>
+                    <input type="text" class="form-control" name="action_assignee[]" placeholder="Kto wykona?">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label">Termin</label>
+                    <input type="date" class="form-control" name="action_deadline[]">
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeActionItem(this)">Usuń zadanie</button>
+        </div>
+    `;
+    container.appendChild(newItem);
+}
+
+// Remove action item
+function removeActionItem(button) {
+    button.closest('.action-item').remove();
+}
+
+// Record speech function
+function recordSpeech(elementOrId, fieldName) {
+    let targetElement;
+    
+    if (typeof elementOrId === 'string') {
+        // Direct field ID
+        targetElement = document.getElementById(elementOrId);
+    } else {
+        // Button clicked - find the input/textarea in the same input-group
+        const inputGroup = elementOrId.closest('.input-group');
+        targetElement = inputGroup.querySelector('input, textarea');
+    }
+    
+    if (!targetElement) {
+        alert('Nie można znaleźć pola do wpisania tekstu');
+        return;
+    }
+    
+    // Show loading state
+    const button = typeof elementOrId === 'string' ? null : elementOrId;
+    if (button) {
+        button.disabled = true;
+        button.textContent = '⏺️';
+    }
+    
+    // Record and transcribe
+    fetch('/api/record-speech', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            field: fieldName || elementOrId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            targetElement.value = data.text;
+            alert('Transkrypcja zakończona pomyślnie!');
+        } else {
+            alert('Błąd transkrypcji: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Błąd połączenia: ' + error.message);
+    })
+    .finally(() => {
+        if (button) {
+            button.disabled = false;
+            button.textContent = '🎤';
+        }
+    });
+}
+
+// Set default date to now
+document.addEventListener('DOMContentLoaded', function() {
+    const dateInput = document.getElementById('date');
+    if (dateInput && !dateInput.value) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        dateInput.value = now.toISOString().slice(0, 16);
+    }
+});
+</script>
+{% endblock %}
