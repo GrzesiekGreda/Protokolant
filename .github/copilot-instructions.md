@@ -56,8 +56,30 @@ Protokolant/
 
 ## Core Features
 
-### 1. Protocol Creation
+### 1. Speech-to-Text (MAIN FEATURE)
+- **Automatic voice transcription** with punctuation and grammar correction
+- Record audio from microphone or upload audio files
+- OpenAI Whisper AI for high-quality Polish language recognition
+- LanguageTool for automatic spelling and grammar corrections
+- Save transcriptions to text files
+- API endpoints: `/api/record-speech`, `/api/transcribe-file`, `/api/voice-command`
+- Module: `src/speech_to_text.py`
+- Documentation: `SPEECH_RECOGNITION.md`
+
+### 1.1 Voice Commands System
+- **Voice-controlled document editing** with trigger word "uwaga"
+- Commands:
+  - "uwaga cofnij" - undo last text block
+  - "uwaga cofnij słowo" - undo last word
+  - "uwaga cofnij zdanie" - undo last sentence
+  - "uwaga zapisz" - save document
+  - "uwaga nowy" - save current and create new document
+- Module: `src/voice_commands.py`
+- Documentation: `VOICE_COMMANDS.md`
+
+### 2. Protocol Creation
 - Form for entering meeting details (date, time, location, participants)
+- Voice input buttons (🎤) for all text fields
 - Agenda items with discussion notes
 - Action items with assignees and deadlines
 - Decisions tracking

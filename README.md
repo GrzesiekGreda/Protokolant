@@ -8,12 +8,34 @@ Protokolant to aplikacja webowa w Pythonie, która pomaga organizacjom profesjon
 
 ## Funkcje
 
+- ✅ **Rozpoznawanie mowy** - Automatyczna transkrypcja z interpunkcją i korektą ortografii
 - ✅ Tworzenie protokołów ze spotkań
 - ✅ Rejestrowanie uczestników, agend i decyzji
 - ✅ Śledzenie zadań z terminami realizacji
 - ✅ Eksport do PDF
 - ✅ Wyszukiwanie i filtrowanie protokołów
 - ✅ Responsywny interfejs webowy
+
+### 🎤 Funkcja rozpoznawania mowy
+
+Główna funkcja projektu: **automatyczna transkrypcja mowy na tekst** z:
+- Automatyczną interpunkcją (kropki, przecinki, znaki zapytania)
+- Korektą ortograficzną języka polskiego
+- Korektą gramatyczną
+- Zapisem do pliku
+
+**Dokumentacja:** Zobacz [SPEECH_RECOGNITION.md](SPEECH_RECOGNITION.md) dla szczegółów.
+
+### 🗣️ System poleceń głosowych
+
+Sterowanie dokumentem za pomocą głosu:
+- **"uwaga cofnij"** - cofa ostatni tekst mówiony
+- **"uwaga cofnij słowo"** - cofa ostatnie słowo
+- **"uwaga cofnij zdanie"** - cofa ostatnie zdanie
+- **"uwaga zapisz"** - zapisuje dokument
+- **"uwaga nowy"** - zapisuje i tworzy nowy dokument
+
+**Dokumentacja:** Zobacz [VOICE_COMMANDS.md](VOICE_COMMANDS.md) dla szczegółów.
 
 ## Wymagania
 

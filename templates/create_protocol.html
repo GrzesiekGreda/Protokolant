@@ -16,7 +16,12 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <label for="title" class="form-label">Tytuł spotkania *</label>
-                        <input type="text" class="form-control" id="title" name="title" required>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="title" name="title" required>
+                            <button type="button" class="btn btn-outline-primary" onclick="recordSpeech('title')" title="Nagraj głosem">
+                                🎤
+                            </button>
+                        </div>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -101,6 +106,9 @@
 
 {% block extra_js %}
 <script>
+let isRecording = false;
+let currentField = null;
+
 function addParticipant() {
     const container = document.getElementById('participants-container');
     const div = document.createElement('div');
@@ -140,6 +148,85 @@ function addActionItem() {
         </div>
     `;
     container.appendChild(div);
+}
+
+// === FUNKCJA NAGRYWANIA MOWY ===
+async function recordSpeech(fieldId, duration = null) {
+    if (isRecording) {
+        alert('Nagrywanie już trwa...');
+        return;
+    }
+    
+    const field = document.getElementById(fieldId);
+    if (!field) {
+        alert('Nie znaleziono pola: ' + fieldId);
+        return;
+    }
+    
+    currentField = field;
+    isRecording = true;
+    
+    // Pokaż komunikat
+    const originalValue = field.value;
+    field.value = '🎤 Nagrywanie... Proszę mówić...';
+    field.disabled = true;
+    
+    try {
+        // Wywołaj API do nagrywania
+        const response = await fetch('/api/record-speech', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                duration: duration,
+                field: fieldId
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Wstaw rozpoznany tekst
+            field.value = originalValue ? originalValue + ' ' + result.text : result.text;
+            
+            // Pokaż komunikat sukcesu
+            showNotification('Rozpoznano: ' + result.text, 'success');
+        } else {
+            // Przywróć oryginalną wartość
+            field.value = originalValue;
+            
+            // Pokaż błędy
+            const errors = result.errors ? result.errors.join(', ') : result.message;
+            showNotification('Błąd: ' + errors, 'error');
+        }
+    } catch (error) {
+        field.value = originalValue;
+        showNotification('Błąd połączenia: ' + error.message, 'error');
+    } finally {
+        isRecording = false;
+        field.disabled = false;
+        currentField = null;
+    }
+}
+
+// Funkcja do wyświetlania powiadomień
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-dismiss po 5 sekundach
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
 }
 </script>
 {% endblock %}

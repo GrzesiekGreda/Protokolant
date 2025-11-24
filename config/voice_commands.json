@@ -1,0 +1,48 @@
+{
+    "trigger_word": "uwaga",
+    "commands": {
+        "cofnij": {
+            "action": "undo_text",
+            "description": "Cofa ostatni tekst mówiony ciągiem",
+            "enabled": true,
+            "aliases": []
+        },
+        "cofnij słowo": {
+            "action": "undo_word",
+            "description": "Cofa ostatnie słowo",
+            "enabled": true,
+            "aliases": [
+                "cofnij wyraz"
+            ]
+        },
+        "cofnij zdanie": {
+            "action": "undo_sentence",
+            "description": "Cofa ostatnie zdanie",
+            "enabled": true,
+            "aliases": []
+        },
+        "nowy": {
+            "action": "new_document",
+            "description": "Zapisuje dotychczasowy dokument i tworzy nowy",
+            "enabled": true,
+            "aliases": [
+                "nowy dokument",
+                "nowy plik"
+            ]
+        },
+        "zapisz": {
+            "action": "save_document",
+            "description": "Zapisuje wprowadzone zmiany",
+            "enabled": true,
+            "aliases": [
+                "save",
+                "zachowaj"
+            ]
+        }
+    },
+    "metadata": {
+        "version": "1.0",
+        "last_modified": "2025-11-24T11:11:22.872892",
+        "created": "2025-11-24T11:11:22.872821"
+    }
+}

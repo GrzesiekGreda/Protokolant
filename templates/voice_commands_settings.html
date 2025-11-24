@@ -1,0 +1,550 @@
+{% extends "base.html" %}
+
+{% block title %}Ustawienia poleceń głosowych - Protokolant{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">⚙️ Ustawienia poleceń głosowych</h1>
+
+        <!-- Słowo aktywujące -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Słowo aktywujące</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Słowo, które uruchamia system poleceń głosowych</p>
+                <div class="row align-items-end">
+                    <div class="col-md-6">
+                        <label for="triggerWord" class="form-label">Aktualne słowo:</label>
+                        <input type="text" class="form-control" id="triggerWord" value="" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-primary" onclick="showEditTriggerModal()">
+                            Zmień słowo aktywujące
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lista poleceń -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Polecenia głosowe</h5>
+                <button type="button" class="btn btn-light btn-sm" onclick="showAddCommandModal()">
+                    ➕ Dodaj polecenie
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="commandsList" class="table-responsive">
+                    <!-- Tabela będzie wygenerowana przez JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Statystyki -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Statystyki</h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="statistics">
+                    <!-- Statystyki będą wygenerowane przez JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Akcje -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Akcje</h5>
+            </div>
+            <div class="card-body">
+                <button type="button" class="btn btn-warning" onclick="resetConfig()">
+                    🔄 Przywróć ustawienia domyślne
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="exportConfig()">
+                    📥 Eksportuj konfigurację
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edycja słowa aktywującego -->
+<div class="modal fade" id="editTriggerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Zmień słowo aktywujące</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="newTriggerWord" class="form-label">Nowe słowo aktywujące:</label>
+                    <input type="text" class="form-control" id="newTriggerWord" placeholder="np. uwaga, hej, start">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-primary" onclick="saveTriggerWord()">Zapisz</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Dodaj/Edytuj polecenie -->
+<div class="modal fade" id="commandModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="commandModalTitle">Dodaj polecenie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editingCommand">
+                
+                <div class="mb-3">
+                    <label for="commandPhrase" class="form-label">Fraza polecenia *</label>
+                    <input type="text" class="form-control" id="commandPhrase" 
+                           placeholder="np. cofnij słowo, zapisz, nowy dokument">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="commandAction" class="form-label">Akcja *</label>
+                    <select class="form-control" id="commandAction">
+                        <option value="undo_text">undo_text - Cofnij tekst</option>
+                        <option value="undo_word">undo_word - Cofnij słowo</option>
+                        <option value="undo_sentence">undo_sentence - Cofnij zdanie</option>
+                        <option value="save_document">save_document - Zapisz dokument</option>
+                        <option value="new_document">new_document - Nowy dokument</option>
+                        <option value="custom">custom - Własna akcja</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="customActionDiv" style="display: none;">
+                    <label for="customAction" class="form-label">Nazwa własnej akcji</label>
+                    <input type="text" class="form-control" id="customAction" 
+                           placeholder="np. clear_document, undo_paragraph">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="commandDescription" class="form-label">Opis</label>
+                    <textarea class="form-control" id="commandDescription" rows="2" 
+                              placeholder="Opis działania polecenia"></textarea>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="commandAliases" class="form-label">Aliasy (oddzielone przecinkami)</label>
+                    <input type="text" class="form-control" id="commandAliases" 
+                           placeholder="np. cofnij wyraz, cofnij literę">
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="commandEnabled" checked>
+                    <label class="form-check-label" for="commandEnabled">
+                        Polecenie włączone
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                <button type="button" class="btn btn-primary" onclick="saveCommand()">Zapisz</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentConfig = null;
+
+// Załaduj konfigurację przy starcie
+document.addEventListener('DOMContentLoaded', function() {
+    loadConfig();
+    
+    // Pokaż/ukryj pole własnej akcji
+    document.getElementById('commandAction').addEventListener('change', function() {
+        const customDiv = document.getElementById('customActionDiv');
+        customDiv.style.display = this.value === 'custom' ? 'block' : 'none';
+    });
+});
+
+// Załaduj konfigurację z API
+async function loadConfig() {
+    try {
+        const response = await fetch('/api/voice-config');
+        const data = await response.json();
+        
+        if (data.success) {
+            currentConfig = data;
+            displayConfig();
+        } else {
+            showAlert('Błąd ładowania konfiguracji: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('Błąd połączenia: ' + error.message, 'danger');
+    }
+}
+
+// Wyświetl konfigurację
+function displayConfig() {
+    // Słowo aktywujące
+    document.getElementById('triggerWord').value = currentConfig.trigger_word;
+    
+    // Lista poleceń
+    displayCommands();
+    
+    // Statystyki
+    displayStatistics();
+}
+
+// Wyświetl listę poleceń
+function displayCommands() {
+    const container = document.getElementById('commandsList');
+    const commands = currentConfig.commands;
+    
+    let html = `
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Polecenie</th>
+                    <th>Akcja</th>
+                    <th>Opis</th>
+                    <th>Aliasy</th>
+                    <th>Status</th>
+                    <th>Akcje</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+    
+    for (const [phrase, cmd] of Object.entries(commands)) {
+        const statusBadge = cmd.enabled 
+            ? '<span class="badge bg-success">Włączone</span>'
+            : '<span class="badge bg-secondary">Wyłączone</span>';
+        
+        const aliasesText = cmd.aliases && cmd.aliases.length > 0
+            ? cmd.aliases.join(', ')
+            : '-';
+        
+        html += `
+            <tr>
+                <td><strong>${phrase}</strong></td>
+                <td><code>${cmd.action}</code></td>
+                <td>${cmd.description || '-'}</td>
+                <td><small>${aliasesText}</small></td>
+                <td>${statusBadge}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="editCommand('${phrase}')">✏️</button>
+                    <button class="btn btn-sm btn-warning" onclick="toggleCommand('${phrase}')">
+                        ${cmd.enabled ? '🔇' : '🔊'}
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCommand('${phrase}')">🗑️</button>
+                </td>
+            </tr>
+        `;
+    }
+    
+    html += `
+            </tbody>
+        </table>
+    `;
+    
+    container.innerHTML = html;
+}
+
+// Wyświetl statystyki
+function displayStatistics() {
+    const container = document.getElementById('statistics');
+    const stats = currentConfig.statistics;
+    
+    container.innerHTML = `
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3>${stats.total_commands}</h3>
+                <p class="text-muted">Wszystkie polecenia</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3>${stats.enabled_commands}</h3>
+                <p class="text-muted">Włączone</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3>${stats.disabled_commands}</h3>
+                <p class="text-muted">Wyłączone</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card">
+                <h3>${stats.total_aliases}</h3>
+                <p class="text-muted">Aliasy</p>
+            </div>
+        </div>
+    `;
+}
+
+// Pokaż modal edycji słowa aktywującego
+function showEditTriggerModal() {
+    document.getElementById('newTriggerWord').value = currentConfig.trigger_word;
+    new bootstrap.Modal(document.getElementById('editTriggerModal')).show();
+}
+
+// Zapisz nowe słowo aktywujące
+async function saveTriggerWord() {
+    const newTrigger = document.getElementById('newTriggerWord').value.trim();
+    
+    if (!newTrigger) {
+        showAlert('Słowo aktywujące nie może być puste', 'danger');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/voice-config/trigger-word', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trigger_word: newTrigger })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editTriggerModal')).hide();
+            loadConfig();
+        } else {
+            showAlert('Błąd: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('Błąd połączenia: ' + error.message, 'danger');
+    }
+}
+
+// Pokaż modal dodawania polecenia
+function showAddCommandModal() {
+    document.getElementById('commandModalTitle').textContent = 'Dodaj polecenie';
+    document.getElementById('editingCommand').value = '';
+    document.getElementById('commandPhrase').value = '';
+    document.getElementById('commandAction').value = 'undo_text';
+    document.getElementById('customAction').value = '';
+    document.getElementById('commandDescription').value = '';
+    document.getElementById('commandAliases').value = '';
+    document.getElementById('commandEnabled').checked = true;
+    document.getElementById('customActionDiv').style.display = 'none';
+    
+    new bootstrap.Modal(document.getElementById('commandModal')).show();
+}
+
+// Edytuj polecenie
+function editCommand(phrase) {
+    const cmd = currentConfig.commands[phrase];
+    
+    document.getElementById('commandModalTitle').textContent = 'Edytuj polecenie';
+    document.getElementById('editingCommand').value = phrase;
+    document.getElementById('commandPhrase').value = phrase;
+    document.getElementById('commandAction').value = cmd.action;
+    document.getElementById('commandDescription').value = cmd.description || '';
+    document.getElementById('commandAliases').value = cmd.aliases ? cmd.aliases.join(', ') : '';
+    document.getElementById('commandEnabled').checked = cmd.enabled;
+    
+    new bootstrap.Modal(document.getElementById('commandModal')).show();
+}
+
+// Zapisz polecenie
+async function saveCommand() {
+    const editingCommand = document.getElementById('editingCommand').value;
+    const phrase = document.getElementById('commandPhrase').value.trim();
+    let action = document.getElementById('commandAction').value;
+    
+    if (action === 'custom') {
+        action = document.getElementById('customAction').value.trim();
+    }
+    
+    const description = document.getElementById('commandDescription').value.trim();
+    const aliasesText = document.getElementById('commandAliases').value.trim();
+    const aliases = aliasesText ? aliasesText.split(',').map(a => a.trim()) : [];
+    const enabled = document.getElementById('commandEnabled').checked;
+    
+    if (!phrase || !action) {
+        showAlert('Fraza i akcja są wymagane', 'danger');
+        return;
+    }
+    
+    try {
+        let url, method, body;
+        
+        if (editingCommand) {
+            // Edycja
+            url = `/api/voice-config/command/${encodeURIComponent(editingCommand)}`;
+            method = 'PUT';
+            body = {
+                new_phrase: phrase !== editingCommand ? phrase : undefined,
+                action,
+                description,
+                aliases,
+                enabled
+            };
+        } else {
+            // Dodawanie
+            url = '/api/voice-config/command';
+            method = 'POST';
+            body = {
+                command_phrase: phrase,
+                action,
+                description,
+                aliases,
+                enabled
+            };
+        }
+        
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('commandModal')).hide();
+            loadConfig();
+        } else {
+            showAlert('Błąd: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('Błąd połączenia: ' + error.message, 'danger');
+    }
+}
+
+// Przełącz status polecenia
+async function toggleCommand(phrase) {
+    if (!confirm(`Czy na pewno chcesz przełączyć status polecenia "${phrase}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/voice-config/command/${encodeURIComponent(phrase)}/toggle`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            loadConfig();
+        } else {
+            showAlert('Błąd: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('Błąd połączenia: ' + error.message, 'danger');
+    }
+}
+
+// Usuń polecenie
+async function deleteCommand(phrase) {
+    if (!confirm(`Czy na pewno chcesz usunąć polecenie "${phrase}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/voice-config/command/${encodeURIComponent(phrase)}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            loadConfig();
+        } else {
+            showAlert('Błąd: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('Błąd połączenia: ' + error.message, 'danger');
+    }
+}
+
+// Resetuj konfigurację
+async function resetConfig() {
+    if (!confirm('Czy na pewno chcesz przywrócić ustawienia domyślne? Wszystkie zmiany zostaną utracone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/voice-config/reset', {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showAlert(data.message, 'success');
+            loadConfig();
+        } else {
+            showAlert('Błąd: ' + data.message, 'danger');
+        }
+    } catch (error) {
+        showAlert('Błąd połączenia: ' + error.message, 'danger');
+    }
+}
+
+// Eksportuj konfigurację
+function exportConfig() {
+    const dataStr = JSON.stringify(currentConfig, null, 4);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `voice_commands_config_${new Date().toISOString().slice(0,10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    showAlert('Konfiguracja została wyeksportowana', 'success');
+}
+
+// Pokaż alert
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.role = 'alert';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+</script>
+
+<style>
+.stat-card {
+    text-align: center;
+    padding: 20px;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.stat-card h3 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #1e3a8a;
+    margin-bottom: 10px;
+}
+
+.stat-card p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}
