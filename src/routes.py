@@ -149,6 +149,51 @@ def edit_protocol(protocol_id):
     
     return render_template('edit_protocol.html', protocol=protocol)
 
+@bp.route('/protocol/<int:protocol_id>/pdf')
+def generate_pdf(protocol_id):
+    """Generate PDF document from protocol"""
+    from flask import send_file
+    from .utils import generate_protocol_pdf
+    import tempfile
+    import re
+    
+    protocol = Protocol.query.get_or_404(protocol_id)
+    
+    # Create filename from participants and date
+    participants_names = []
+    for participant in protocol.participants[:3]:  # Max 3 names
+        # Get last name (last word in name)
+        name_parts = participant.name.strip().split()
+        if name_parts:
+            participants_names.append(name_parts[-1])
+    
+    # Format date
+    date_str = protocol.date.strftime('%Y%m%d')
+    
+    # Create filename
+    if participants_names:
+        filename = f"Protokol_{'-'.join(participants_names)}_{date_str}.pdf"
+    else:
+        filename = f"Protokol_{date_str}.pdf"
+    
+    # Remove special characters from filename
+    filename = re.sub(r'[^\w\s-]', '', filename)
+    filename = re.sub(r'[-\s]+', '_', filename)
+    
+    # Generate PDF in temporary file
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+    try:
+        generate_protocol_pdf(protocol, temp_file.name)
+        return send_file(
+            temp_file.name,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        flash(f'Błąd podczas generowania PDF: {str(e)}', 'error')
+        return redirect(url_for('main.view_protocol', protocol_id=protocol_id))
+
 @bp.route('/protocol/<int:protocol_id>/delete', methods=['POST'])
 def delete_protocol(protocol_id):
     """Delete a protocol"""

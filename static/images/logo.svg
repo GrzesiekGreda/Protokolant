@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" width="400" height="200">
+  <defs>
+    <style>
+      .logo-bg { fill: #000000; }
+      .logo-border { fill: none; stroke: #dc2626; stroke-width: 6; }
+      .logo-text { 
+        fill: #000000;
+        stroke: #dc2626; 
+        stroke-width: 3;
+        font-family: 'Arial Black', 'Arial', sans-serif; 
+        font-size: 70px; 
+        font-weight: 900; 
+        letter-spacing: 6px;
+        paint-order: stroke fill;
+      }
+    </style>
+  </defs>
+  
+  <rect class="logo-bg" x="3" y="3" width="394" height="194" rx="20"/>
+  <rect class="logo-border" x="3" y="3" width="394" height="194" rx="20"/>
+  
+  <text class="logo-text" x="200" y="130" text-anchor="middle">GREDA</text>
+</svg>
