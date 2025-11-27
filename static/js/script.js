@@ -1,5 +1,19 @@
 // Protokolant - JavaScript utilities
 
+// Web Speech API - rozpoznawanie mowy w przeglądarce
+let recognition = null;
+if ('webkitSpeechRecognition' in window) {
+    recognition = new webkitSpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'pl-PL';
+} else if ('SpeechRecognition' in window) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'pl-PL';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // Set default date to now for datetime-local input
     const dateInput = document.getElementById('date');
@@ -17,6 +31,11 @@ document.addEventListener('DOMContentLoaded', function() {
             bsAlert.close();
         }, 5000);
     });
+    
+    // Sprawdź czy przeglądarka wspiera Web Speech API
+    if (!recognition) {
+        console.warn('Przeglądarka nie wspiera Web Speech API');
+    }
 });
 
 // Function to add participant field

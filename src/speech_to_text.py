@@ -29,7 +29,7 @@ class SpeechToTextProcessor:
     Klasa do przetwarzania mowy na tekst z automatyczną korektą ortografii i interpunkcji
     """
     
-    def __init__(self, language: str = 'pl-PL', use_whisper: bool = True, enable_voice_commands: bool = True):
+    def __init__(self, language: str = 'pl-PL', use_whisper: bool = True, enable_voice_commands: bool = False):
         """
         Inicjalizacja procesora mowy
         
@@ -42,13 +42,10 @@ class SpeechToTextProcessor:
         self.use_whisper = use_whisper
         self.recognizer = sr.Recognizer()
         
-        # System poleceń głosowych
-        self.enable_voice_commands = enable_voice_commands
-        if self.enable_voice_commands:
-            self.voice_commander = VoiceCommandProcessor()
-            logger.info("System poleceń głosowych włączony")
-        else:
-            self.voice_commander = None
+        # System poleceń głosowych - WYŁĄCZONY
+        self.enable_voice_commands = False
+        self.voice_commander = None
+        logger.info("System poleceń głosowych wyłączony")
         
         # Inicjalizacja Whisper AI
         if self.use_whisper and WHISPER_AVAILABLE:
@@ -63,22 +60,36 @@ class SpeechToTextProcessor:
             logger.warning("Whisper nie jest zainstalowany. Używam Google Speech Recognition.")
             self.use_whisper = False
         
-        # Inicjalizacja narzędzia do korekty gramatycznej
-        try:
-            logger.info("Inicjalizacja narzędzia do korekty ortografii...")
-            self.grammar_tool = language_tool_python.LanguageTool('pl-PL')
-            logger.info("Narzędzie do korekty ortografii gotowe")
-        except Exception as e:
-            logger.error(f"Błąd inicjalizacji korekty ortografii: {e}")
-            self.grammar_tool = None
+        # Lazy loading dla LanguageTool - będzie załadowany przy pierwszym użyciu
+        self._grammar_tool = None
+        self._grammar_tool_initialized = False
     
-    def record_audio(self, duration: Optional[int] = None, save_path: Optional[str] = None) -> Tuple[bool, str]:
+    @property
+    def grammar_tool(self):
         """
-        Nagrywa dźwięk z mikrofonu
+        Lazy initialization dla LanguageTool
+        Inicjalizuje narzędzie tylko przy pierwszym użyciu
+        """
+        if not self._grammar_tool_initialized:
+            try:
+                logger.info("Inicjalizacja narzędzia do korekty ortografii...")
+                self._grammar_tool = language_tool_python.LanguageTool('pl-PL')
+                logger.info("Narzędzie do korekty ortografii gotowe")
+            except Exception as e:
+                logger.error(f"Błąd inicjalizacji korekty ortografii: {e}")
+                self._grammar_tool = None
+            finally:
+                self._grammar_tool_initialized = True
+        return self._grammar_tool
+    
+    def record_audio(self, duration: Optional[int] = None, save_path: Optional[str] = None, chunk_duration: int = 5) -> Tuple[bool, str]:
+        """
+        Nagrywa dźwięk z mikrofonu w krótkich fragmentach
         
         Args:
             duration: Czas nagrywania w sekundach (None = do momentu ciszy)
             save_path: Ścieżka do zapisu pliku audio
+            chunk_duration: Długość fragmentu w sekundach (domyślnie 5s dla quasi-realtime)
         
         Returns:
             Tuple (sukces, ścieżka_do_pliku_lub_komunikat_błędu)
@@ -88,15 +99,16 @@ class SpeechToTextProcessor:
                 logger.info("Nasłuchiwanie... Proszę mówić.")
                 
                 # Kalibracja poziomu szumu
-                self.recognizer.adjust_for_ambient_noise(source, duration=1)
+                self.recognizer.adjust_for_ambient_noise(source, duration=0.5)
                 
-                # Nagrywanie
-                if duration:
+                # Nagrywanie krótkiego fragmentu (dla szybszej responsywności)
+                if duration and duration > 0:
                     logger.info(f"Nagrywanie przez {duration} sekund...")
                     audio = self.recognizer.record(source, duration=duration)
                 else:
-                    logger.info("Nagrywanie do momentu ciszy...")
-                    audio = self.recognizer.listen(source, timeout=30, phrase_time_limit=300)
+                    # Domyślnie krótki fragment dla pseudo-streaming
+                    logger.info(f"Nagrywanie fragmentu {chunk_duration}s...")
+                    audio = self.recognizer.record(source, duration=chunk_duration)
                 
                 # Zapis do pliku
                 if save_path:
@@ -435,9 +447,9 @@ class SpeechToTextProcessor:
     
     def cleanup(self):
         """Zamyka narzędzia i zwalnia zasoby"""
-        if self.grammar_tool:
+        if self._grammar_tool:
             try:
-                self.grammar_tool.close()
+                self._grammar_tool.close()
             except:
                 pass
 

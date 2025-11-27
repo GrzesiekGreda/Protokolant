@@ -217,63 +217,160 @@ function removeActionItem(button) {
 }
 
 // === FUNKCJA NAGRYWANIA MOWY ===
-async function recordSpeech(fieldId, duration = null) {
-    if (isRecording) {
-        alert('Nagrywanie już trwa...');
-        return;
-    }
-    
-    const field = document.getElementById(fieldId);
-    if (!field) {
-        alert('Nie znaleziono pola: ' + fieldId);
-        return;
-    }
-    
-    currentField = field;
-    isRecording = true;
-    
-    // Pokaż komunikat
-    const originalValue = field.value;
-    field.value = '🎤 Nagrywanie... Proszę mówić...';
-    field.disabled = true;
-    
-    try {
-        // Wywołaj API do nagrywania
-        const response = await fetch('/api/record-speech', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                duration: duration,
-                field: fieldId
-            })
+// ================================================================================
+// WebSocket - Strumieniowe rozpoznawanie mowy w czasie rzeczywistym
+// ================================================================================
+
+let socket = null;
+let recordingButton = null;
+
+// Połącz z serwerem WebSocket
+function initializeSocket() {
+    if (!socket) {
+        socket = io();
+        
+        socket.on('connect', () => {
+            console.log('✅ Połączono z serwerem WebSocket');
         });
         
-        const result = await response.json();
+        socket.on('disconnect', () => {
+            console.log('❌ Rozłączono z serwerem WebSocket');
+        });
         
-        if (result.success) {
-            // Wstaw rozpoznany tekst
-            field.value = originalValue ? originalValue + ' ' + result.text : result.text;
-            
-            // Pokaż komunikat sukcesu
-            showNotification('Rozpoznano: ' + result.text, 'success');
-        } else {
-            // Przywróć oryginalną wartość
-            field.value = originalValue;
-            
-            // Pokaż błędy
-            const errors = result.errors ? result.errors.join(', ') : result.message;
-            showNotification('Błąd: ' + errors, 'error');
-        }
-    } catch (error) {
-        field.value = originalValue;
-        showNotification('Błąd połączenia: ' + error.message, 'error');
-    } finally {
-        isRecording = false;
-        field.disabled = false;
-        currentField = null;
+        socket.on('recording_started', (data) => {
+            console.log('🎤 Nagrywanie rozpoczęte:', data.message);
+        });
+        
+        socket.on('recording_stopped', (data) => {
+            console.log('⏹️ Nagrywanie zatrzymane:', data.message);
+        });
+        
+        socket.on('recognition_result', (data) => {
+            if (currentField) {
+                // Usuń znacznik "🎤 Nagrywanie..." jeśli jest
+                let currentText = currentField.value.replace('🎤 Nagrywanie...', '').trim();
+                
+                // Dodaj nowy rozpoznany tekst
+                if (currentText) {
+                    currentField.value = currentText + ' ' + data.text + ' 🎤';
+                } else {
+                    currentField.value = data.text + ' 🎤';
+                }
+                
+                console.log(`📝 ${data.is_final ? 'Final' : 'Partial'}: ${data.text}`);
+            }
+        });
+        
+        socket.on('error', (data) => {
+            console.error('❌ Błąd WebSocket:', data.message);
+            showNotification('Błąd: ' + data.message, 'error');
+            if (isRecording) {
+                stopRecording();
+            }
+        });
     }
+}
+
+// Wywołaj przy ładowaniu strony
+document.addEventListener('DOMContentLoaded', () => {
+    initializeSocket();
+});
+
+async function recordSpeech(fieldIdOrButton, durationOrFieldName = null) {
+    let field;
+    let button;
+    
+    // Sprawdź czy pierwszy parametr to string (ID pola) czy HTMLElement (button)
+    if (typeof fieldIdOrButton === 'string') {
+        // Wywołanie z ID pola: recordSpeech('title')
+        field = document.getElementById(fieldIdOrButton);
+        // Znajdź przycisk obok tego pola
+        button = field.parentElement.querySelector('button');
+    } else {
+        // Wywołanie z button: recordSpeech(this, 'agenda_title')
+        button = fieldIdOrButton;
+        const fieldName = durationOrFieldName;
+        
+        // Znajdź pole input/textarea w tej samej grupie
+        const inputGroup = button.closest('.input-group');
+        if (inputGroup) {
+            field = inputGroup.querySelector(`[name="${fieldName}[]"], [name="${fieldName}"]`);
+            if (!field) {
+                field = inputGroup.querySelector('input, textarea');
+            }
+        }
+    }
+    
+    if (!field) {
+        alert('Nie znaleziono pola do wprowadzenia tekstu');
+        return;
+    }
+    
+    // Jeśli nagrywanie trwa - zatrzymaj je
+    if (isRecording) {
+        stopRecording();
+        return;
+    }
+    
+    // Rozpocznij nagrywanie strumieniowe
+    startRecording(field, button);
+}
+
+function startRecording(field, button) {
+    if (!socket || !socket.connected) {
+        alert('Brak połączenia z serwerem. Odśwież stronę.');
+        return;
+    }
+    
+    isRecording = true;
+    currentField = field;
+    recordingButton = button;
+    
+    // Zmień wygląd przycisku na STOP
+    button.innerHTML = '⏹️';
+    button.classList.add('recording');
+    button.title = 'Kliknij aby zatrzymać nagrywanie';
+    
+    // Dodaj znacznik nagrywania do pola
+    const currentText = field.value.trim();
+    if (currentText) {
+        field.value = currentText + ' 🎤 Nagrywanie...';
+    } else {
+        field.value = '🎤 Nagrywanie...';
+    }
+    
+    // Wyślij sygnał do serwera aby rozpocząć nagrywanie
+    socket.emit('start_recording', {
+        language: 'pl-PL'
+    });
+}
+
+function stopRecording() {
+    if (!isRecording) {
+        return;
+    }
+    
+    isRecording = false;
+    
+    // Wyślij sygnał do serwera aby zatrzymać nagrywanie
+    if (socket && socket.connected) {
+        socket.emit('stop_recording');
+    }
+    
+    // Przywróć normalny wygląd przycisku
+    if (recordingButton) {
+        recordingButton.innerHTML = '🎤';
+        recordingButton.classList.remove('recording');
+        recordingButton.title = 'Nagraj głosem';
+    }
+    
+    // Usuń znacznik "🎤 Nagrywanie..." z pola
+    if (currentField) {
+        currentField.value = currentField.value.replace('🎤 Nagrywanie...', '').replace('🎤', '').trim();
+    }
+    
+    currentField = null;
+    recordingButton = null;
 }
 
 // Funkcja do wyświetlania powiadomień
@@ -289,10 +386,11 @@ function showNotification(message, type = 'info') {
     const container = document.querySelector('.container');
     container.insertBefore(alertDiv, container.firstChild);
     
-    // Auto-dismiss po 5 sekundach
+    // Auto-dismiss - błędy przez 10s, sukces przez 5s
+    const dismissTime = type === 'error' ? 10000 : 5000;
     setTimeout(() => {
         alertDiv.remove();
-    }, 5000);
+    }, dismissTime);
 }
 </script>
 {% endblock %}

@@ -211,30 +211,34 @@ def delete_protocol(protocol_id):
 @bp.route('/api/record-speech', methods=['POST'])
 def record_speech():
     """
-    API endpoint do nagrywania i transkrypcji mowy
+    API endpoint do nagrywania i transkrypcji mowy - krótkie fragmenty (5s)
     Parametry POST:
-        - duration: Czas nagrywania w sekundach (opcjonalny)
+        - chunk_duration: Długość fragmentu w sekundach (domyślnie 5s)
         - field: Pole do którego ma być wpisany tekst (opcjonalny)
     """
     try:
         # Pobierz parametry
         data = request.get_json() or {}
-        duration = data.get('duration', None)
+        chunk_duration = data.get('chunk_duration', 5)  # Krótkie fragmenty dla quasi-realtime
         field = data.get('field', 'general')
         
-        # Nagrywanie i transkrypcja
-        result = record_speech_to_text(
-            duration=duration,
+        # Utwórz procesor bez poleceń głosowych
+        processor = SpeechToTextProcessor(enable_voice_commands=False)
+        
+        # Nagrywanie i transkrypcja krótkiego fragmentu
+        result = processor.record_and_transcribe(
+            duration=chunk_duration,
             save_audio=True,
-            save_text=False
+            apply_corrections=False  # Wyłącz korekty dla szybkości
         )
+        processor.cleanup()
         
         if result['success']:
             return jsonify({
                 'success': True,
                 'text': result['text'],
                 'audio_path': result['audio_path'],
-                'message': 'Transkrypcja zakończona pomyślnie'
+                'message': 'Fragment przetworzony pomyślnie'
             })
         else:
             return jsonify({
@@ -589,3 +593,87 @@ def reset_voice_config():
             'success': False,
             'message': f'Błąd: {str(e)}'
         }), 500
+
+
+# ================================================================================
+# WebSocket Handlers - Strumieniowe rozpoznawanie mowy
+# ================================================================================
+
+from flask_socketio import emit
+from .app import socketio
+from .streaming_recognition import StreamingRecognizer
+import logging
+
+logger = logging.getLogger(__name__)
+
+# Słownik aktywnych sesji rozpoznawania (session_id -> recognizer)
+active_recognizers = {}
+
+@socketio.on('connect')
+def handle_connect():
+    """Klient połączył się przez WebSocket"""
+    logger.info(f"✅ Klient połączony: {request.sid}")
+    emit('connected', {'message': 'Połączono z serwerem'})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    """Klient rozłączył się"""
+    logger.info(f"❌ Klient rozłączony: {request.sid}")
+    # Zatrzymaj rozpoznawanie jeśli było aktywne
+    if request.sid in active_recognizers:
+        active_recognizers[request.sid].stop()
+        del active_recognizers[request.sid]
+
+@socketio.on('start_recording')
+def handle_start_recording(data):
+    """
+    Rozpocznij strumieniowe rozpoznawanie mowy
+    Data: {'language': 'pl-PL'}
+    """
+    try:
+        session_id = request.sid
+        language = data.get('language', 'pl-PL')
+        
+        logger.info(f"🎤 Rozpoczynam nagrywanie dla sesji: {session_id}")
+        
+        # Jeśli już trwa nagrywanie dla tej sesji, zatrzymaj je
+        if session_id in active_recognizers:
+            active_recognizers[session_id].stop()
+            del active_recognizers[session_id]
+        
+        # Funkcja callback do wysyłania rozpoznanego tekstu
+        def send_recognition(text: str, is_final: bool):
+            socketio.emit('recognition_result', {
+                'text': text,
+                'is_final': is_final
+            }, room=session_id)
+        
+        # Utwórz i uruchom rozpoznawanie
+        recognizer = StreamingRecognizer(callback=send_recognition, language=language)
+        active_recognizers[session_id] = recognizer
+        recognizer.start()
+        
+        emit('recording_started', {'message': 'Nagrywanie rozpoczęte'})
+        
+    except Exception as e:
+        logger.error(f"Błąd podczas rozpoczynania nagrywania: {e}")
+        emit('error', {'message': f'Błąd: {str(e)}'})
+
+@socketio.on('stop_recording')
+def handle_stop_recording():
+    """Zatrzymaj strumieniowe rozpoznawanie mowy"""
+    try:
+        session_id = request.sid
+        
+        logger.info(f"⏹️ Zatrzymuję nagrywanie dla sesji: {session_id}")
+        
+        if session_id in active_recognizers:
+            active_recognizers[session_id].stop()
+            del active_recognizers[session_id]
+            emit('recording_stopped', {'message': 'Nagrywanie zatrzymane'})
+        else:
+            emit('error', {'message': 'Brak aktywnego nagrywania'})
+            
+    except Exception as e:
+        logger.error(f"Błąd podczas zatrzymywania nagrywania: {e}")
+        emit('error', {'message': f'Błąd: {str(e)}'})

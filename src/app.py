@@ -4,9 +4,11 @@ Flask application factory and configuration
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO
 import os
 
 db = SQLAlchemy()
+socketio = SocketIO()
 
 def create_app():
     """Create and configure Flask application"""
@@ -24,6 +26,9 @@ def create_app():
     
     # Initialize database
     db.init_app(app)
+    
+    # Initialize SocketIO
+    socketio.init_app(app, cors_allowed_origins="*", async_mode='threading')
     
     # Register routes
     with app.app_context():
